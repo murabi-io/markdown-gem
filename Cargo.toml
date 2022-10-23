@@ -1,0 +1,34 @@
+[package]
+name = "murabi"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version = "1.0.145", features = ["derive"] }
+termimad = "0.20.3"
+crossterm = "0.23"
+regex = "1.6.0"
+lazy_static = "1.4.0"
+uuid = { version = "1.1.2", features = ["v4", "serde", "fast-rng"] }
+anyhow = "1.0.65"
+exitcode = "1.1.2"
+crokey="0.4.3"
+cli-log = "2.0"
+crossbeam="0.8.2"
+toml="0.5.9"
+
+[dependencies.hocon]
+version = "0.9.0"
+default-features = false
+features = ["serde-support"]
+
+[dependencies.tokio]
+version = "1.17.0"
+default-features = false
+features = ["net", "sync", "process", "rt", "macros", "io-util"]
+
+[dependencies.clap]
+version = "4.0.14"
+features = ["derive"]
