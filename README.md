@@ -15,8 +15,10 @@ println!("{}", skin.term_text(my_markdown));
 ```
 
 Here is a bash command to list the current dir on linux or macos
-```shell {sys=[linux, macos]}
+```shell {cmd=sh, sys=[linux, macos]}
 ls -l
+sleep 5s
+ls -la
 ```
 or on windows:
 
@@ -37,7 +39,7 @@ Get-ChildItem -Recursive | Sort LastWriteTime
 ## Real use cases
 
 
-```js {cmd=node output=txt modify_source}
+```js {cmd=node}
 var items = [5,3,7,6,2,9];
 function swap(items, leftIndex, rightIndex){
   var temp = items[leftIndex];

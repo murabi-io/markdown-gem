@@ -7,12 +7,12 @@ use {
 use crate::cli::args::Args;
 
 #[derive(Clone, PartialEq, Eq)]
-pub struct MissionLocation {
+pub struct JobLocation {
     pub workspace_root: PathBuf,
     pub path_to_md: Option<PathBuf>,
 }
 
-impl fmt::Debug for MissionLocation {
+impl fmt::Debug for JobLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("MissionLocation")
             .field("workspace_root", &self.workspace_root)
@@ -21,7 +21,7 @@ impl fmt::Debug for MissionLocation {
     }
 }
 
-impl MissionLocation {
+impl JobLocation {
     pub fn new(args: &Args) -> Result<Self> {
         let mut workspace_root = args
             .path

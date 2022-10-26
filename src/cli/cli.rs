@@ -1,7 +1,5 @@
 use anyhow::bail;
-use crossterm::style::Color::{AnsiValue, Magenta, Yellow};
-use crossterm::style::Print;
-use std::fmt::{Display, Formatter};
+use std::io::{stdout, BufWriter};
 use {
     crate::*,
     clap::Parser,
@@ -15,14 +13,11 @@ use {
 };
 
 use crate::cli::args::Args;
-use crate::executor::command_output::CommandExecInfo::Line;
 use crate::executor::execution_plan::{ExecutionItem, ExecutionPlan};
 use crate::executor::job::Job;
+use crate::executor::job_location::JobLocation;
 use crate::executor::job_ref::JobRef;
-use crate::executor::mission::Mission;
-use crate::executor::mission_location::MissionLocation;
 use crate::view::View;
-use crate::Line::Normal;
 
 /// the type used by all GUI writing functions
 ///
@@ -39,12 +34,12 @@ pub fn writer() -> W {
     BufWriter::new(stdout())
 }
 
-pub fn run() -> anyhow::Result<()> {
+pub fn run() -> anyhow::Result<Option<JobRef>> {
     let mut args: Args = Args::parse();
     args.fix()?;
     info!("args: {:#?}", &args);
 
-    let location = MissionLocation::new(&args)?;
+    let location = JobLocation::new(&args)?;
     info!("mission location: {:#?}", &location);
 
     if location.path_to_md.is_none() {
@@ -63,37 +58,33 @@ pub fn run() -> anyhow::Result<()> {
     w.queue(cursor::Hide)?;
 
     let event_source = EventSource::new()?;
-    let mut result = Ok(());
+    let mut result = Ok(None);
 
     loop {
         let job = match execution_plan.next() {
-            Some(ExecutionItem::Execute(executable)) => Job::from_executable(&executable),
+            Some(ExecutionItem::Execute(executable)) => Job::new(&location, &executable),
             Some(ExecutionItem::Output(line)) => {
-                // let fmt_line = FmtLine::from(line, &render_skin);
-                // w.queue(Print(FmtText {
-                //     lines: vec![fmt_line],
-                //     skin: &render_skin,
-                //     width: Some(width as usize),
-                // }))?;
-                // w.flush()?;
                 view.write_on(&mut w, line)?;
                 continue;
             }
-            _ => break,
+            _ => {
+                info!("End of the execution plan");
+                break;
+            }
         };
-        // let r = job.and_then(|j| app::run(&mut w, j, &event_source));
-        // match r {
-        //     Ok(Some(job_ref)) => {
-        //         next_job = job_ref;
-        //     }
-        //     Ok(None) => {
-        //         break;
-        //     }
-        //     Err(e) => {
-        //         result = Err(e);
-        //         break;
-        //     }
-        // }
+        w.flush()?;
+        let r = job.map(|j| app::run(&mut w, &mut view, j, &event_source));
+        match r {
+            Some(Ok(v)) => {
+                result = Ok(v);
+                continue;
+            }
+            Some(Err(e)) => {
+                result = Err(e);
+                continue;
+            }
+            _ => continue,
+        }
     }
 
     w.queue(cursor::Show)?;

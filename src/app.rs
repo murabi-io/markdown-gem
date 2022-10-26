@@ -2,6 +2,7 @@ use crate::cli::action::Action;
 use crate::cli::cli::W;
 use crate::cli::internal::Internal;
 use crossbeam::channel::{Receiver, Sender};
+use termimad::minimad::LineParser;
 use {
     crate::*,
     anyhow::Result,
@@ -17,7 +18,6 @@ use crate::executor::command_result::CommandResult;
 use crate::executor::executor::Executor;
 use crate::executor::job::Job;
 use crate::executor::job_ref::JobRef;
-use crate::executor::mission::Mission;
 use crate::state::AppState;
 use crate::view::View;
 
@@ -43,7 +43,7 @@ pub fn run(
     //
     // mission.add_watchs(&mut watcher)?;
 
-    let executor = Executor::new(&job)?;
+    let executor = Executor::new(job.clone())?;
 
     let mut state = AppState::new(&keybindings)?;
     state.computation_starts();
@@ -88,10 +88,16 @@ pub fn run(
             recv(executor.line_receiver) -> info => {
                 match info? {
                     CommandExecInfo::Line(line) => {
+                        let line_parse = LineParser::from(&line.content);
+                        match view.write_on(w, line_parse.as_code()) {
+                            Ok(_) => debug!("Output written"),
+                            Err(e) => error!("Error on output: {}", e)
+                        };
                         // state.add_line(line);
                     }
                     CommandExecInfo::End { status } => {
                         info!("execution finished with status: {:?}", status);
+                        break;
                         // computation finished
                         // if let Some(output) = state.take_output() {
                         //     let cmd_result = CommandResult::new(output, status)?;
@@ -104,11 +110,17 @@ pub fn run(
                     }
                     CommandExecInfo::Error(e) => {
                         warn!("error in computation: {}", e);
+                        let line_parse = LineParser::from(&e);
+                        match view.write_on(w, line_parse.as_code()) {
+                            Ok(_) => debug!("Output written"),
+                            Err(e) => error!("Error on output: {}", e)
+                        };
                         // state.computation_stops();
                         break;
                     }
                     CommandExecInfo::Interruption => {
                         debug!("command was interrupted (by us)");
+                        break;
                     }
                 }
             }

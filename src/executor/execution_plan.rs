@@ -1,6 +1,7 @@
 use crate::executor::executable::{Executable, ExecutablePosition};
 use crate::fenced_attributes::code_chunk::CodeChunk;
 use crate::minimad::{Line, LineParser};
+use std::env;
 
 #[cfg(windows)]
 const LINE_ENDING: &'static str = "\r\n";
@@ -82,7 +83,30 @@ impl<'s> ExecutionPlan<'s> {
         }
         //reverse the plan to use it as a stack from the end
         plan.reverse();
+        plan = plan.into_iter().filter(Self::by_sys_and_arch).collect();
         ExecutionPlan { plan }
+    }
+
+    fn by_sys_and_arch(item: &ExecutionItem) -> bool {
+        match item {
+            ExecutionItem::Execute(e) if e.code_chunk.is_some() => {
+                let attrs = &e.code_chunk.as_ref().unwrap().attributes;
+                // Ensure that the sys and arch matches for executables
+                (attrs.sys.is_none()
+                    || attrs
+                        .sys
+                        .as_ref()
+                        .unwrap()
+                        .contains(&env::consts::OS.to_owned()))
+                    && (attrs.arch.is_none()
+                        || attrs
+                            .arch
+                            .as_ref()
+                            .unwrap()
+                            .contains(&env::consts::ARCH.to_owned()))
+            }
+            _ => true,
+        }
     }
 
     pub fn next(&mut self) -> Option<ExecutionItem> {
@@ -98,7 +122,7 @@ mod tests {
     use crate::fenced_attributes::{Attributes, CodeChunk};
     use crate::minimad::Compound;
     use crate::*;
-    use std::fmt::format;
+    use termimad::minimad::clean;
 
     #[test]
     fn indented_code_between_fences() {

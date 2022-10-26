@@ -5,7 +5,6 @@ use crate::cli::keybindings::KeyBindings;
 use crate::executor::command_output::{CommandOutput, CommandOutputLine};
 use crate::executor::command_result::CommandResult;
 use crate::executor::executor::Task;
-use crate::executor::mission::Mission;
 use {
     crate::*,
     anyhow::Result,

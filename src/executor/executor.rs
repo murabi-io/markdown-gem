@@ -1,4 +1,6 @@
+use std::path::PathBuf;
 use std::{
+    fs,
     process::{ExitStatus, Stdio},
     thread,
 };
@@ -16,10 +18,9 @@ use tokio::{
 
 use crate::executor::command_output::{CommandExecInfo, CommandOutputLine, CommandStream};
 use crate::executor::job::Job;
-use crate::executor::mission::Mission;
 use crate::*;
 
-/// an executor calling a cargo (or similar) command in a separate
+/// an executor calling a command in a separate
 /// thread when asked to and sending the lines of output in a channel,
 /// and finishing by None.
 /// Channel sizes are designed to avoid useless computations.
@@ -41,7 +42,7 @@ impl Executor {
     /// launch the commands, send the lines of its stderr on the
     /// line channel.
     /// If `with_stdout` capture and send also its stdout.
-    pub fn new(job: &Job) -> Result<Self> {
+    pub fn new(job: Job) -> Result<Self> {
         let mut command = Command::from(job.get_command());
 
         let with_stdout = job.need_stdout;
@@ -84,10 +85,24 @@ impl Executor {
                                 Some(task) => task,
                             };
 
+                            let file_path = match job.write_file() {
+                                Err(e) => {
+                                    let response = CommandExecInfo::Error(
+                                        format!("failed to write file: {}", e)
+                                    );
+                                    match line_sender.send(response) {
+                                        Err(_) => break,
+                                        _ => continue,
+                                    }
+                                }
+                                Ok(f) => f,
+                            };
+                            let path_str = String::from(file_path.clone().to_string_lossy());
+                            command.arg(path_str);
                             let child = match start_task(task, &mut command) {
                                 Err(e) => {
                                     let response = CommandExecInfo::Error(
-                                        format!("failed to start task: {}", e)
+                                        format!("failed to start task: {} job: {}", e, job)
                                     );
                                     match line_sender.send(response) {
                                         Err(_) => break,
@@ -163,12 +178,11 @@ impl std::future::Future for AlwaysPending {
 }
 
 /// Start the given task/command
-fn start_task(task: Task, command: &mut Command) -> Result<Child> {
+fn start_task(task: Task, command: &mut Command) -> std::io::Result<Child> {
     command
         .kill_on_drop(true)
         .env("RUST_BACKTRACE", if task.backtrace { "1" } else { "0" })
         .spawn()
-        .context("failed to launch command")
 }
 
 /// Send all lines in the process' output

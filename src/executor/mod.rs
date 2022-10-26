@@ -5,7 +5,6 @@ pub(crate) mod execution_plan;
 pub(crate) mod executor;
 pub(crate) mod failure;
 pub(crate) mod job;
+pub(crate) mod job_location;
 pub(crate) mod job_ref;
-pub(crate) mod mission;
-pub(crate) mod mission_location;
 pub(crate) mod report;
