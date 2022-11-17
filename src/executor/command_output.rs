@@ -1,4 +1,6 @@
-use {crate::*, std::process::ExitStatus};
+use std::process::ExitStatus;
+
+use crate::executor::execution_plan::ExecutionItem;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CommandStream {
@@ -24,7 +26,11 @@ pub enum CommandExecInfo {
     /// Command ended
     End { status: Option<ExitStatus> },
 
+    /// Command started
+    Start,
+
     /// Murabi killed the command
+    #[allow(dead_code)]
     Interruption,
 
     /// Execution failed
@@ -32,16 +38,7 @@ pub enum CommandExecInfo {
 
     /// Here's a line of output (coming from stderr or stdout)
     Line(CommandOutputLine),
-}
 
-impl CommandOutput {
-    pub fn reverse(&mut self) {
-        self.lines.reverse()
-    }
-    pub fn push(&mut self, line: CommandOutputLine) {
-        self.lines.push(line);
-    }
-    pub fn len(&self) -> usize {
-        self.lines.len()
-    }
+    /// Output an MD line coming from execution plan
+    Output(ExecutionItem),
 }

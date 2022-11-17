@@ -1,12 +1,11 @@
-use crate::cli::action::Action;
-use crate::cli::internal::Internal;
 use {
     crokey::*,
     serde::Deserialize,
     std::collections::{hash_map, HashMap},
 };
 
-use crate::executor::job_ref::JobRef;
+use crate::cli::action::Action;
+use crate::cli::internal::Internal;
 
 /// A mapping from key combinations to actions.
 ///
@@ -27,11 +26,7 @@ impl Default for KeyBindings {
         bindings.set(key!(ctrl - c), Internal::Quit);
         bindings.set(key!(ctrl - q), Internal::Quit);
         bindings.set(key!(q), Internal::Quit);
-        bindings.set(key!(s), Internal::ToggleSummary);
-        bindings.set(key!(w), Internal::ToggleWrap);
-        bindings.set(key!(b), Internal::ToggleBacktrace);
         bindings.set(key!(esc), Internal::Back);
-        bindings.set(key!(ctrl - d), JobRef::Default);
         bindings
     }
 }
@@ -46,8 +41,8 @@ impl KeyBindings {
             self.map.insert(*ck, action.clone());
         }
     }
-    pub fn get<CK: Into<CroKey>>(&self, key: CK) -> Option<&Action> {
-        self.map.get(&key.into())
+    pub fn get<CK: Into<CroKey>>(&self, key: CK) -> Option<Action> {
+        self.map.get(&key.into()).map(|a| a.to_owned())
     }
     /// return the shortest key.to_string for the internal, if any
     pub fn shortest_internal_key(&self, internal: Internal) -> Option<String> {
@@ -92,21 +87,14 @@ fn test_deserialize_keybindings() {
     }
     let toml = r#"
     [keybindings]
-    Ctrl-U = "internal:scroll-pages(-2)"
-    Ctrl-d = "internal:scroll-page(1)"
-    alt-q = "internal:quit"
-    alt-p = "job:previous"
+    alt-q = "quit"
+    alt-p = "back"
     "#;
     let conf = toml::from_str::<Config>(toml).unwrap();
 
     assert_eq!(conf.keybindings.get(key!(z)), None,);
     assert_eq!(
         conf.keybindings.get(key!(alt - q)),
-        Some(&Action::Internal(Internal::Quit)),
-    );
-
-    assert_eq!(
-        conf.keybindings.get(key!(alt - p)),
-        Some(&Action::Job(JobRef::Previous)),
+        Some(Action::Internal(Internal::Quit)),
     );
 }

@@ -7,10 +7,6 @@ pub enum Internal {
     Back,
     Help,
     Quit,
-    ToggleBacktrace,
-    ToggleRawOutput,
-    ToggleSummary,
-    ToggleWrap,
 }
 
 impl fmt::Display for Internal {
@@ -19,10 +15,6 @@ impl fmt::Display for Internal {
             Self::Back => write!(f, "back to previous page or job"),
             Self::Help => write!(f, "help"),
             Self::Quit => write!(f, "quit"),
-            Self::ToggleBacktrace => write!(f, "toggle backtrace"),
-            Self::ToggleRawOutput => write!(f, "toggle raw output"),
-            Self::ToggleSummary => write!(f, "toggle summary"),
-            Self::ToggleWrap => write!(f, "toggle wrap"),
         }
     }
 }
@@ -34,10 +26,6 @@ impl std::str::FromStr for Internal {
             "back" => Ok(Self::Back),
             "help" => Ok(Self::Help),
             "quit" => Ok(Self::Quit),
-            "toggle-raw-output" => Ok(Self::ToggleRawOutput),
-            "toggle-backtrace" => Ok(Self::ToggleBacktrace),
-            "toggle-summary" => Ok(Self::ToggleSummary),
-            "toggle-wrap" => Ok(Self::ToggleWrap),
             _ => Err(()),
         }
     }

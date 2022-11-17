@@ -1,13 +1,15 @@
-use crate::cli::action::Action;
-use crate::executor::executable::Executable;
-use crate::executor::job_location::JobLocation;
-use std::fmt::{format, Display, Formatter};
+use std::fmt::{Display, Formatter};
 use std::path::PathBuf;
 use std::process::Command;
 use std::{fs, io};
+
 use uuid::Uuid;
 
-static MURABI_BUILD_DIR: &str = "murabi_build";
+use crate::cli::action::Action;
+use crate::executor::executable::Executable;
+use crate::executor::job_location::JobLocation;
+
+static MURABI_BUILD_DIR: &str = ".mrbuild";
 
 /// One of the possible jobs that murabi can run
 #[derive(Debug, Clone)]

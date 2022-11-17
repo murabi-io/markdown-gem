@@ -1,23 +1,20 @@
-use std::path::PathBuf;
 use std::{
-    fs,
     process::{ExitStatus, Stdio},
     thread,
 };
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use tokio::{
     io::{AsyncBufReadExt, AsyncRead, BufReader},
     process::{Child, Command},
-    sync::{
-        mpsc::{channel, Sender},
-        oneshot,
-    },
+    sync::oneshot,
     task::JoinHandle,
 };
 
 use crate::executor::command_output::{CommandExecInfo, CommandOutputLine, CommandStream};
+use crate::executor::execution_plan::{ExecutionItem, ExecutionPlan};
 use crate::executor::job::Job;
+use crate::executor::job_location::JobLocation;
 use crate::*;
 
 /// an executor calling a command in a separate
@@ -26,7 +23,6 @@ use crate::*;
 /// Channel sizes are designed to avoid useless computations.
 pub struct Executor {
     pub line_receiver: crossbeam::channel::Receiver<CommandExecInfo>,
-    task_sender: Sender<Task>,
     stop_sender: oneshot::Sender<()>, // signal for stopping the thread
     thread: thread::JoinHandle<()>,
 }
@@ -42,21 +38,9 @@ impl Executor {
     /// launch the commands, send the lines of its stderr on the
     /// line channel.
     /// If `with_stdout` capture and send also its stdout.
-    pub fn new(job: Job) -> Result<Self> {
-        let mut command = Command::from(job.get_command());
-
-        let with_stdout = job.need_stdout;
-        let (task_sender, mut task_receiver) = channel::<Task>(1);
+    pub fn new(location: JobLocation, mut execution_plan: ExecutionPlan) -> Result<Self> {
         let (stop_sender, mut stop_receiver) = oneshot::channel();
         let (line_sender, line_receiver) = crossbeam::channel::unbounded();
-        command
-            .stdin(Stdio::null())
-            .stderr(Stdio::piped())
-            .stdout(if with_stdout {
-                Stdio::piped()
-            } else {
-                Stdio::null()
-            });
 
         let thread = thread::spawn(move || {
             // start a runtime to manage the executor
@@ -67,68 +51,99 @@ impl Executor {
 
             rt.block_on(async move {
                 // Handle to the current task
-                let mut current_task: Option<tokio::task::JoinHandle<_>> = None;
 
                 loop {
-                    tokio::select! {
-                        _ = &mut stop_receiver => break,
-
-                        // wait for the next task
-                        task = task_receiver.recv() => {
-                            if let Some(old) = current_task.take() {
-                                old.abort();
-                            }
-
-                            let task = match task {
-                                // no more tasks, exit now
-                                None => break,
-                                Some(task) => task,
-                            };
-
-                            let file_path = match job.write_file() {
-                                Err(e) => {
-                                    let response = CommandExecInfo::Error(
-                                        format!("failed to write file: {}", e)
-                                    );
-                                    match line_sender.send(response) {
-                                        Err(_) => break,
-                                        _ => continue,
-                                    }
-                                }
-                                Ok(f) => f,
-                            };
-                            let path_str = String::from(file_path.clone().to_string_lossy());
-                            command.arg(path_str);
-                            let child = match start_task(task, &mut command) {
-                                Err(e) => {
-                                    let response = CommandExecInfo::Error(
-                                        format!("failed to start task: {} job: {}", e, job)
-                                    );
-                                    match line_sender.send(response) {
-                                        Err(_) => break,
-                                        _ => continue,
-                                    }
-                                }
-                                Ok(child) => child,
-                            };
-
-                            current_task = Some(tokio::spawn(execute_task(child, with_stdout, line_sender.clone())));
+                    let mut current_task: Option<tokio::task::JoinHandle<_>> = None;
+                    let maybe_job = match execution_plan.next() {
+                        Some(ExecutionItem::Execute(executable)) => {
+                            Job::new(&location, &executable)
                         }
-
-                        // Wait for the current task to finish
-                        result = task_result(&mut current_task) => {
-                            current_task = None;
-                            let response = match result {
-                                Err(e) => CommandExecInfo::Error(
-                                    format!("failed to execute task: {}", e)
-                                ),
-                                Ok(status) => CommandExecInfo::End { status },
+                        Some(output) => {
+                            if line_sender.send(CommandExecInfo::Output(output)).is_err() {
+                                error!("Couldn't send output line, channel maybe closed");
                             };
-
-                            if line_sender.send(response).is_err() {
-                                break
+                            continue;
+                        }
+                        _ => {
+                            info!("End of the execution plan");
+                            tokio::select! {
+                                _ = &mut stop_receiver => break,
                             }
                         }
+                    };
+                    let maybe_command = maybe_job.as_ref().map(|j| {
+                        let mut command = Command::from(j.get_command());
+                        command.stdin(Stdio::null()).stderr(Stdio::piped()).stdout(
+                            if j.need_stdout {
+                                Stdio::piped()
+                            } else {
+                                Stdio::null()
+                            },
+                        );
+                        command
+                    });
+                    let job = if maybe_job.is_some() {
+                        maybe_job.unwrap()
+                    } else {
+                        continue;
+                    };
+                    let with_stdout = job.need_stdout;
+                    let mut command = if maybe_command.is_some() {
+                        maybe_command.unwrap()
+                    } else {
+                        continue;
+                    };
+
+                    // wait for the next task
+                    if let Some(old) = current_task.take() {
+                        old.abort();
+                    }
+
+                    let file_path = match job.write_file() {
+                        Err(e) => {
+                            let response =
+                                CommandExecInfo::Error(format!("failed to write file: {}", e));
+                            match line_sender.send(response) {
+                                Err(_) => break,
+                                _ => continue,
+                            }
+                        }
+                        Ok(f) => f,
+                    };
+                    let path_str = String::from(file_path.clone().to_string_lossy());
+                    command.arg(path_str);
+                    let child = match start_task(&mut command) {
+                        Err(e) => {
+                            let response = CommandExecInfo::Error(format!(
+                                "failed to start task: {} job: {}",
+                                e, job
+                            ));
+                            match line_sender.send(response) {
+                                Err(_) => break,
+                                _ => continue,
+                            }
+                        }
+                        Ok(child) => child,
+                    };
+
+                    if line_sender.send(CommandExecInfo::Start).is_err() {
+                        error!("Couldn't send start message");
+                    };
+
+                    current_task = Some(tokio::spawn(execute_task(
+                        child,
+                        with_stdout,
+                        line_sender.clone(),
+                    )));
+
+                    // Wait for the current task to finish
+                    let response = match task_result(&mut current_task).await {
+                        Err(e) => CommandExecInfo::Error(format!("failed to execute task: {}", e)),
+                        Ok(status) => CommandExecInfo::End { status },
+                    };
+
+                    if line_sender.send(response).is_err() {
+                        break;
                     }
                 }
             })
@@ -136,20 +151,16 @@ impl Executor {
 
         Ok(Self {
             line_receiver,
-            task_sender,
             stop_sender,
             thread,
         })
     }
-    /// notify the executor a computation is necessary
-    pub fn start(&self, task: Task) -> Result<()> {
-        self.task_sender.try_send(task)?;
-        Ok(())
-    }
+
     pub fn die(self) -> Result<()> {
         debug!("received kill order");
-        self.stop_sender.send(()).unwrap();
+        let _ = self.stop_sender.send(());
         self.thread.join().unwrap();
+        debug!("the executor killed");
         Ok(())
     }
 }
@@ -178,11 +189,8 @@ impl std::future::Future for AlwaysPending {
 }
 
 /// Start the given task/command
-fn start_task(task: Task, command: &mut Command) -> std::io::Result<Child> {
-    command
-        .kill_on_drop(true)
-        .env("RUST_BACKTRACE", if task.backtrace { "1" } else { "0" })
-        .spawn()
+fn start_task(command: &mut Command) -> std::io::Result<Child> {
+    command.kill_on_drop(true).spawn()
 }
 
 /// Send all lines in the process' output

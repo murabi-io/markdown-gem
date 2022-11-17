@@ -14,7 +14,7 @@ pub struct JobLocation {
 
 impl fmt::Debug for JobLocation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("MissionLocation")
+        f.debug_struct("JobLocation")
             .field("workspace_root", &self.workspace_root)
             .field("path_to_md", &self.path_to_md)
             .finish()

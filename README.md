@@ -17,7 +17,7 @@ println!("{}", skin.term_text(my_markdown));
 Here is a bash command to list the current dir on linux or macos
 ```shell {cmd=sh, sys=[linux, macos]}
 ls -l
-sleep 5s
+sleep 1s
 ls -la
 ```
 or on windows:
@@ -83,6 +83,13 @@ function quickSort(items, left, right) {
 var sortedArray = quickSort(items, 0, items.length - 1);
 console.log(sortedArray); //prints [2,3,5,6,7,9]
 ```
+
+and a table for testing:
+| Tables   |      Are      |  Cool |
+|----------|:-------------:|------:|
+| col 1 is |  left-aligned | $1600 |
+| col 2 is |    centered   |   $12 |
+| col 3 is | right-aligned |    $1 |
 
 * the help screen of a terminal application
 * small snippets of rich text in a bigger application

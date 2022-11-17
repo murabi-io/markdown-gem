@@ -1,12 +1,9 @@
+use anyhow::Result;
+use crossterm::style::{Attribute, Color::*};
+use termimad::{minimad::*, *};
+
 use crate::cli::action::Action;
 use crate::cli::cli::W;
-use {
-    crate::*,
-    anyhow::Result,
-    crossterm::style::{Attribute, Color::*},
-    termimad::{minimad::*, *},
-};
-
 use crate::cli::keybindings::KeyBindings;
 
 static TEMPLATE: &str = r#"
@@ -31,7 +28,6 @@ Those bindings can be configured in your global `prefs.toml` file or in the proj
 "#;
 
 pub struct HelpPage {
-    area: Area,
     skin: MadSkin,
     expander: OwningTemplateExpander<'static>,
     template: TextTemplate<'static>,
@@ -52,7 +48,6 @@ impl HelpPage {
             .map(|(action, cks)| {
                 let action = match action {
                     Action::Internal(internal) => internal.to_string(),
-                    Action::Job(job_name) => format!("start the *{job_name}* job"),
                 };
                 let cks: Vec<String> = cks.iter().map(|ck| format!("*{ck}*")).collect();
                 let cks = cks.join(" or ");
@@ -68,7 +63,6 @@ impl HelpPage {
         }
         let template = TextTemplate::from(TEMPLATE);
         Self {
-            area: Area::default(),
             skin,
             expander,
             template,
@@ -77,11 +71,10 @@ impl HelpPage {
     }
 
     /// draw the state on the whole terminal
-    pub fn draw(&mut self, w: &mut W, area: Area) -> Result<()> {
-        self.area = area;
+    pub fn draw(&mut self, w: &mut W, area: &Area) -> Result<()> {
         let text = self.expander.expand(&self.template);
-        let fmt_text = FmtText::from_text(&self.skin, text, Some((self.area.width - 1) as usize));
-        let mut text_view = TextView::from(&self.area, &fmt_text);
+        let fmt_text = FmtText::from_text(&self.skin, text, Some((area.width - 1) as usize));
+        let mut text_view = TextView::from(area, &fmt_text);
         self.scroll = text_view.set_scroll(self.scroll);
         Ok(text_view.write_on(w)?)
     }

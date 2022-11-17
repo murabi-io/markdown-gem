@@ -1,24 +1,19 @@
+use std::io::Write;
+
+use crossbeam::select;
+use crossterm::event::KeyCode::{Down, PageDown, PageUp, Up};
+use crossterm::event::{KeyEvent, MouseEventKind};
+
+use {crate::*, anyhow::Result, crokey::CroKey, crossterm::event::Event};
+
 use crate::cli::action::Action;
 use crate::cli::cli::W;
 use crate::cli::internal::Internal;
-use crossbeam::channel::{Receiver, Sender};
-use termimad::minimad::LineParser;
-use {
-    crate::*,
-    anyhow::Result,
-    crokey::CroKey,
-    crossbeam::channel::{bounded, select},
-    crossterm::event::Event,
-    termimad::EventSource,
-};
-
 use crate::cli::keybindings::KeyBindings;
 use crate::executor::command_output::CommandExecInfo;
-use crate::executor::command_result::CommandResult;
+use crate::executor::execution_plan::ExecutionPlan;
 use crate::executor::executor::Executor;
-use crate::executor::job::Job;
-use crate::executor::job_ref::JobRef;
-use crate::state::AppState;
+use crate::executor::job_location::JobLocation;
 use crate::view::View;
 
 /// Run the mission and return the reference to the next
@@ -26,54 +21,57 @@ use crate::view::View;
 pub fn run(
     w: &mut W,
     view: &mut View,
-    job: Job,
+    location: JobLocation,
+    execution_plan: ExecutionPlan,
     event_source: &EventSource,
-) -> Result<Option<JobRef>> {
+) -> Result<Option<Action>> {
     let keybindings = KeyBindings::default();
-    // let (watch_sender, watch_receiver): (Sender<()>, Receiver<()>) = bounded(0);
-    // let mut watcher = notify::recommended_watcher(move |res| match res {
-    //     Ok(_) => {
-    //         debug!("notify event received");
-    //         if let Err(e) = watch_sender.send(()) {
-    //             debug!("error when notifying on inotify event: {}", e);
-    //         }
-    //     }
-    //     Err(e) => warn!("watch error: {:?}", e),
-    // })?;
-    //
-    // mission.add_watchs(&mut watcher)?;
 
-    let executor = Executor::new(job.clone())?;
+    let executor = Executor::new(location, execution_plan)?;
 
-    let mut state = AppState::new(&keybindings)?;
-    state.computation_starts();
-    // state.draw(w)?;
-
-    executor.start(state.new_task())?; // first computation
-
+    view.execution_starts();
     let user_events = event_source.receiver();
-    let mut next_job: Option<JobRef> = None;
-    #[allow(unused_mut)]
+
+    let mut action: Option<Action> = None;
+
     loop {
-        let mut action: Option<&Action> = None;
         select! {
             recv(user_events) -> user_event => {
                 match user_event?.event {
+                    #[allow(unused_mut)] //due to windows config should be mutable
                     Event::Resize(mut width, mut height) => {
                         // I don't know why but Crossterm seems to always report an
-                        // understimated size on Windows
+                        // underestimated size on Windows
                         #[cfg(windows)]
                         {
                             width += 1;
                             height += 1;
                         }
-                        // state.resize(width, height);
+                        view.resize(width as usize, height as usize);
                     }
-                    Event::Key(key_event) => {
+                    Event::Key(key_event @ KeyEvent { code, .. }) => {
                         debug!("key pressed: {}", CroKey::from(key_event));
-                        action = keybindings.get(key_event);
+
+                        match code {
+                            Up => view.try_scroll_lines(w, -1)?,
+                            Down => view.try_scroll_lines(w, 1)?,
+                            PageUp => view.try_scroll_pages(w, -1)?,
+                            PageDown => view.try_scroll_pages(w, 1)?,
+                            _ => {
+                                action = keybindings.get(key_event);
+                                debug!("Action requested {:?}", action);
+                            }
+                        }
                     }
-                    _ => {}
+                    Event::Mouse(mouse_event) => {
+                        debug!("mouse event: {:?}", mouse_event.kind);
+
+                        match mouse_event.kind {
+                            MouseEventKind::ScrollDown => view.try_scroll_lines(w, 1)?,
+                            MouseEventKind::ScrollUp => view.try_scroll_lines(w, -1)?,
+                            _ => {}
+                        }
+                    }
                 }
                 event_source.unblock(false);
             }
@@ -88,34 +86,34 @@ pub fn run(
             recv(executor.line_receiver) -> info => {
                 match info? {
                     CommandExecInfo::Line(line) => {
-                        let line_parse = LineParser::from(&line.content);
-                        match view.write_on(w, line_parse.as_code()) {
+                        view.draw_help_line(w)?;
+                        match view.write_command_output(w, line.content) {
                             Ok(_) => debug!("Output written"),
-                            Err(e) => error!("Error on output: {}", e)
+                            Err(e) => error!("Error on output: {}", e),
                         };
-                        // state.add_line(line);
+                    }
+                    CommandExecInfo::Output(line) => {
+                        view.draw_help_line(w)?;
+                        match view.write_on(w, line) {
+                            Ok(_) => debug!("Output written"),
+                            Err(e) => error!("Error on output: {}", e),
+                        };
+                    }
+                    CommandExecInfo::Start => {
+                        info!("execution started");
+                        view.draw_executing();
                     }
                     CommandExecInfo::End { status } => {
                         info!("execution finished with status: {:?}", status);
-                        break;
-                        // computation finished
-                        // if let Some(output) = state.take_output() {
-                        //     let cmd_result = CommandResult::new(output, status)?;
-                        //     state.set_result(cmd_result);
-                        //     // action = state.action();
-                        // } else {
-                        //     warn!("a computation finished but didn't start?");
-                        //     state.computation_stops();
-                        // }
+                        view.execution_stops();
                     }
                     CommandExecInfo::Error(e) => {
                         warn!("error in computation: {}", e);
-                        let line_parse = LineParser::from(&e);
-                        match view.write_on(w, line_parse.as_code()) {
+                        match view.write_command_output(w, e) {
                             Ok(_) => debug!("Output written"),
-                            Err(e) => error!("Error on output: {}", e)
+                            Err(e) => error!("Error on output: {}", e),
                         };
-                        // state.computation_stops();
+                        view.execution_stops();
                         break;
                     }
                     CommandExecInfo::Interruption => {
@@ -123,6 +121,7 @@ pub fn run(
                         break;
                     }
                 }
+                w.flush()?;
             }
         }
         if let Some(action) = action.take() {
@@ -130,43 +129,22 @@ pub fn run(
             match action {
                 Action::Internal(internal) => match internal {
                     Internal::Back => {
-                        if !state.close_help() {
-                            next_job = Some(JobRef::Previous);
+                        if !view.close_help() {
                             break;
                         }
                     }
                     Internal::Help => {
-                        state.toggle_help();
+                        view.toggle_help();
                     }
                     Internal::Quit => {
                         break;
                     }
-                    Internal::ToggleRawOutput => {
-                        state.toggle_raw_output();
-                    }
-                    Internal::ToggleSummary => {
-                        state.toggle_summary_mode();
-                    }
-                    Internal::ToggleWrap => {
-                        state.toggle_wrap_mode();
-                    }
-                    Internal::ToggleBacktrace => {
-                        state.toggle_backtrace();
-                        if let Err(e) = executor.start(state.new_task()) {
-                            debug!("error sending task: {}", e);
-                        } else {
-                            state.computation_starts();
-                        }
-                    }
                 },
-                Action::Job(job_ref) => {
-                    next_job = Some((*job_ref).clone());
-                    break;
-                }
             }
         }
-        // state.draw(w)?;
+        view.draw(w, None)?;
+        w.flush()?
     }
     executor.die()?;
-    Ok(next_job)
+    Ok(action)
 }

@@ -1,7 +1,8 @@
+use std::env;
+
 use crate::executor::executable::{Executable, ExecutablePosition};
 use crate::fenced_attributes::code_chunk::CodeChunk;
 use crate::minimad::{Line, LineParser};
-use std::env;
 
 #[cfg(windows)]
 const LINE_ENDING: &'static str = "\r\n";
@@ -9,25 +10,26 @@ const LINE_ENDING: &'static str = "\r\n";
 const LINE_ENDING: &'static str = "\n";
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ExecutionItem<'a> {
-    Output(Line<'a>),
+pub enum ExecutionItem {
+    OutputString(String),
+    OutputCode(String),
     Execute(Executable),
 }
 
 /// a plan that is just a collection of items to be executed
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
-pub struct ExecutionPlan<'a> {
-    pub plan: Vec<ExecutionItem<'a>>,
+pub struct ExecutionPlan {
+    pub plan: Vec<ExecutionItem>,
 }
 
-impl<'s> From<&'s str> for ExecutionPlan<'s> {
+impl From<&str> for ExecutionPlan {
     /// build a text from a multi-line string interpreted as markdown
-    fn from(md: &str) -> ExecutionPlan<'_> {
+    fn from(md: &str) -> ExecutionPlan {
         ExecutionPlan::from_md_lines(md.lines())
     }
 }
 
-impl<'s> ExecutionPlan<'s> {
+impl<'a> ExecutionPlan {
     /// parse a text from markdown lines and build the plan.
     ///
     /// ```
@@ -43,12 +45,14 @@ impl<'s> ExecutionPlan<'s> {
     /// ```
     pub fn from_md_lines<I>(md_lines: I) -> Self
     where
-        I: Iterator<Item = &'s str>,
+        I: Iterator<Item = &'a str>,
     {
         let mut plan: Vec<ExecutionItem> = Vec::new();
         let mut between_fences = false;
         let mut code_chunk: Option<CodeChunk> = None;
         let mut current_position: Option<ExecutablePosition> = None;
+
+        // code for to be executed as part of Execute command
         let mut code = String::new();
         for (idx, md_line) in md_lines.enumerate() {
             let parser = LineParser::from(md_line);
@@ -62,6 +66,7 @@ impl<'s> ExecutionPlan<'s> {
                     let position = current_position.clone().unwrap();
                     let position = position.end(idx);
                     let executable = Executable::new(position.clone(), code_chunk, code.clone());
+
                     plan.push(ExecutionItem::Execute(executable));
 
                     between_fences = !between_fences;
@@ -74,9 +79,11 @@ impl<'s> ExecutionPlan<'s> {
                     current_position = Some(ExecutablePosition::start(idx));
                 }
                 _ => {
-                    plan.push(ExecutionItem::Output(line));
                     if between_fences {
+                        plan.push(ExecutionItem::OutputCode(String::from(md_line)));
                         code.push_str(format!("{}{}", md_line, LINE_ENDING).as_str());
+                    } else {
+                        plan.push(ExecutionItem::OutputString(String::from(md_line)));
                     }
                 }
             }
@@ -117,12 +124,11 @@ impl<'s> ExecutionPlan<'s> {
 /// Tests of text parsing
 #[cfg(test)]
 mod tests {
+    use termimad::minimad::clean;
+
     use crate::executor::executable::{Executable, ExecutablePosition};
     use crate::executor::execution_plan::{ExecutionItem, ExecutionPlan, LINE_ENDING};
     use crate::fenced_attributes::{Attributes, CodeChunk};
-    use crate::minimad::Compound;
-    use crate::*;
-    use termimad::minimad::clean;
 
     #[test]
     fn indented_code_between_fences() {
@@ -144,45 +150,49 @@ mod tests {
 
         let expected_attribute_1 = Attributes {
             id: Some("code-1".to_string()),
+            as_file: true,
+            stdout: true,
+            allow_warnings: true,
             ..Attributes::default()
         };
 
         let expected_attribute_2 = Attributes {
             id: Some("code-2".to_string()),
+            as_file: true,
+            stdout: true,
+            allow_warnings: true,
             ..Attributes::default()
         };
 
+        let mut expected_plan = vec![
+            ExecutionItem::OutputString("outside 1".to_string()),
+            ExecutionItem::OutputCode("a".to_string()),
+            ExecutionItem::OutputCode("    b".to_string()),
+            ExecutionItem::Execute(Executable::new(
+                ExecutablePosition::new(1, 4),
+                Some(CodeChunk {
+                    lang: Some(String::from("code")),
+                    attributes: expected_attribute_1.clone(),
+                }),
+                format!("a{}    b{}", LINE_ENDING, LINE_ENDING),
+            )),
+            ExecutionItem::OutputString("outside 2".to_string()),
+            ExecutionItem::OutputCode("c".to_string()),
+            ExecutionItem::OutputCode("    d".to_string()),
+            ExecutionItem::Execute(Executable::new(
+                ExecutablePosition::new(6, 9),
+                Some(CodeChunk {
+                    lang: Some(String::from("code")),
+                    attributes: expected_attribute_2.clone(),
+                }),
+                format!("c{}    d{}", LINE_ENDING, LINE_ENDING),
+            )),
+        ];
+        expected_plan.reverse();
         assert_eq!(
             chunks,
             ExecutionPlan {
-                plan: vec![
-                    ExecutionItem::Output(Line::new_paragraph(vec![Compound::raw_str(
-                        "outside 1"
-                    )])),
-                    ExecutionItem::Output(Line::new_code(Compound::raw_str("a").code())),
-                    ExecutionItem::Output(Line::new_code(Compound::raw_str("    b").code())),
-                    ExecutionItem::Execute(Executable::new(
-                        ExecutablePosition::new(1, 4),
-                        Some(CodeChunk {
-                            lang: Some(String::from("code")),
-                            attributes: expected_attribute_1.clone()
-                        }),
-                        format!("a{}    b{}", LINE_ENDING, LINE_ENDING)
-                    )),
-                    ExecutionItem::Output(Line::new_paragraph(vec![Compound::raw_str(
-                        "outside 2"
-                    )])),
-                    ExecutionItem::Output(Line::new_code(Compound::raw_str("a").code())),
-                    ExecutionItem::Output(Line::new_code(Compound::raw_str("    b").code())),
-                    ExecutionItem::Execute(Executable::new(
-                        ExecutablePosition::new(6, 9),
-                        Some(CodeChunk {
-                            lang: Some(String::from("code")),
-                            attributes: expected_attribute_2.clone()
-                        }),
-                        format!("c{}    d{}", LINE_ENDING, LINE_ENDING)
-                    ))
-                ]
+                plan: expected_plan
             },
         );
     }

@@ -1,5 +1,6 @@
-use crate::fenced_attributes::CodeChunk;
 use std::fmt::{Debug, Formatter};
+
+use crate::fenced_attributes::CodeChunk;
 
 /// Executable position with start and end line numbers
 #[derive(Debug, Default, PartialEq, Eq, Clone, Hash)]

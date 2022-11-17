@@ -1,11 +1,9 @@
+use lazy_static::lazy_static;
+use regex::Regex;
+use serde::{de, Deserialize, Deserializer};
+use std::{fmt, str::FromStr};
+
 use crate::cli::internal::Internal;
-use {
-    crate::executor::job_ref::JobRef,
-    lazy_static::lazy_static,
-    regex::Regex,
-    serde::{de, Deserialize, Deserializer},
-    std::{fmt, str::FromStr},
-};
 
 lazy_static! {
     pub static ref JOB_STRING: Regex = Regex::new(r#"^(\w+)\s*:\s*(\S+)$"#).unwrap();
@@ -15,13 +13,12 @@ lazy_static! {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Action {
     Internal(Internal),
-    Job(JobRef),
 }
 
 #[derive(Debug)]
 pub enum ParseActionError {
     UnknownAction(String),
-    UnknowCategory(String),
+    UnknownCategory(String),
     UnknownInternal(String),
 }
 
@@ -34,7 +31,7 @@ impl fmt::Display for ParseActionError {
                     "Action not understood: {s:?} (did you mean \"job:{s}\"?)"
                 )
             }
-            Self::UnknowCategory(s) => {
+            Self::UnknownCategory(s) => {
                 write!(f, "Unknown category: {s:?}")
             }
             Self::UnknownInternal(s) => {
@@ -60,12 +57,6 @@ impl FromStr for Action {
 impl From<Internal> for Action {
     fn from(i: Internal) -> Self {
         Self::Internal(i)
-    }
-}
-
-impl From<JobRef> for Action {
-    fn from(jr: JobRef) -> Self {
-        Self::Job(jr)
     }
 }
 
