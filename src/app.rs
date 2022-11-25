@@ -7,13 +7,13 @@ use crossterm::event::{KeyEvent, MouseEventKind};
 use {crate::*, anyhow::Result, crokey::CroKey, crossterm::event::Event};
 
 use crate::cli::action::Action;
-use crate::cli::cli::W;
 use crate::cli::internal::Internal;
 use crate::cli::keybindings::KeyBindings;
+use crate::cli::W;
 use crate::executor::command_output::CommandExecInfo;
 use crate::executor::execution_plan::ExecutionPlan;
-use crate::executor::executor::Executor;
 use crate::executor::job_location::JobLocation;
+use crate::executor::Executor;
 use crate::view::View;
 
 /// Run the mission and return the reference to the next
@@ -24,10 +24,11 @@ pub fn run(
     location: JobLocation,
     execution_plan: ExecutionPlan,
     event_source: &EventSource,
+    keep_files: bool,
 ) -> Result<Option<Action>> {
     let keybindings = KeyBindings::default();
 
-    let executor = Executor::new(location, execution_plan)?;
+    let executor = Executor::new(location, execution_plan, keep_files)?;
 
     view.execution_starts();
     let user_events = event_source.receiver();

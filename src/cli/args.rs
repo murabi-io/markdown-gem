@@ -1,10 +1,10 @@
 use anyhow::{bail, Result};
 use clap::Parser;
 
-#[derive(Debug, Parser)]
-/// murabi watches your source and run code checks in background.
+/// gem runs your MD files as Code chunks.
 ///
-/// Documentation at <https://dystroy.org/murabi>
+/// Documentation at <https://github.com/murabi-io/murabi>
+#[derive(Debug, Parser, Default)]
 #[clap(author, version, about)]
 pub struct Args {
     /// verbose mode
@@ -15,17 +15,21 @@ pub struct Args {
     #[clap(short = 'l', long = "log")]
     pub log_file: Option<String>,
 
-    /// path to watch (must be a rust directory or inside)
+    /// path to MD file or directory with MD
     #[clap(short = 'p', long = "path")]
     pub path: Option<String>,
 
+    /// if specified, gem won't delete the build file of the Code chunks
+    #[clap(short = 'k', long = "keep")]
+    pub keep_builds: bool,
+
     #[clap()]
-    /// either a job, or a path, or both
+    /// either a path to the folder, file name, or both
     pub args: Vec<String>,
 }
 
 impl Args {
-    /// positional arguments in murabi command are a convenience
+    /// positional arguments in gem command are a convenience
     /// allowing to skip writing `-p`.
     /// To be used, it must be copied to `path` value.
     pub fn fix(&mut self) -> Result<()> {

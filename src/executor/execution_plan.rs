@@ -1,8 +1,24 @@
+use lazy_static::lazy_static;
 use std::env;
 
 use crate::executor::executable::{Executable, ExecutablePosition};
 use crate::fenced_attributes::code_chunk::CodeChunk;
+use crate::fenced_attributes::Attributes;
 use crate::minimad::{Line, LineParser};
+use sys_info;
+
+#[cfg(unix)]
+lazy_static! {
+    pub static ref LINUX_ID_LIKE: Option<String> = sys_info::linux_os_release()
+        .map(|v| -> Option<String> { v.id_like })
+        .ok()
+        .flatten();
+}
+
+#[cfg(not(unix))]
+lazy_static! {
+    pub static ref LINUX_ID_LIKE: Option<String> = None;
+}
 
 #[cfg(windows)]
 const LINE_ENDING: &'static str = "\r\n";
@@ -34,7 +50,7 @@ impl<'a> ExecutionPlan {
     ///
     /// ```
     /// use minimad::clean;
-    /// use murabi::executor::execution_plan::ExecutionPlan;
+    /// use gem::executor::execution_plan::ExecutionPlan;
     ///
     /// let md = clean::lines(r#"
     ///     * some bullet item
@@ -88,32 +104,47 @@ impl<'a> ExecutionPlan {
                 }
             }
         }
-        //reverse the plan to use it as a stack from the end
+        //reverse the plan to use it as a stack
         plan.reverse();
-        plan = plan.into_iter().filter(Self::by_sys_and_arch).collect();
+        plan = plan
+            .into_iter()
+            .filter(|item| match item {
+                ExecutionItem::Execute(e) if e.code_chunk.is_some() => {
+                    let attrs = &e.code_chunk.as_ref().unwrap().attributes;
+                    Self::by_sys(attrs) && Self::by_arch(attrs) && Self::by_linux_distro(attrs)
+                }
+                _ => true,
+            })
+            .collect();
         ExecutionPlan { plan }
     }
 
-    fn by_sys_and_arch(item: &ExecutionItem) -> bool {
-        match item {
-            ExecutionItem::Execute(e) if e.code_chunk.is_some() => {
-                let attrs = &e.code_chunk.as_ref().unwrap().attributes;
-                // Ensure that the sys and arch matches for executables
-                (attrs.sys.is_none()
-                    || attrs
-                        .sys
-                        .as_ref()
-                        .unwrap()
-                        .contains(&env::consts::OS.to_owned()))
-                    && (attrs.arch.is_none()
-                        || attrs
-                            .arch
-                            .as_ref()
-                            .unwrap()
-                            .contains(&env::consts::ARCH.to_owned()))
-            }
-            _ => true,
-        }
+    fn by_sys(attrs: &Attributes) -> bool {
+        attrs.sys.is_none()
+            || attrs
+                .sys
+                .as_ref()
+                .unwrap()
+                .contains(&env::consts::OS.to_owned())
+    }
+
+    fn by_arch(attrs: &Attributes) -> bool {
+        attrs.arch.is_none()
+            || attrs
+                .arch
+                .as_ref()
+                .unwrap()
+                .contains(&env::consts::ARCH.to_owned())
+    }
+
+    fn by_linux_distro(attrs: &Attributes) -> bool {
+        attrs.linux_distro.is_none()
+            || LINUX_ID_LIKE.is_some()
+                && attrs
+                    .linux_distro
+                    .as_ref()
+                    .unwrap()
+                    .contains(LINUX_ID_LIKE.as_ref().unwrap())
     }
 
     pub fn next(&mut self) -> Option<ExecutionItem> {

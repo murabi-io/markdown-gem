@@ -1,9 +1,7 @@
 [package]
-name = "murabi"
+name = "markdown-gem"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 serde = { version = "1.0.145", features = ["derive"] }
@@ -20,6 +18,7 @@ env_logger = "0.9.0"
 log4rs="1.2.0"
 crossbeam="0.8.2"
 toml="0.5.9"
+sys-info = "0.9.1"
 
 [dependencies.hocon]
 version = "0.9.0"
@@ -34,3 +33,7 @@ features = ["net", "sync", "process", "rt", "macros", "io-util"]
 [dependencies.clap]
 version = "4.0.14"
 features = ["derive"]
+
+[[bin]]
+name = "gem"
+path = "src/main.rs"

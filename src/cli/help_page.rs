@@ -3,16 +3,16 @@ use crossterm::style::{Attribute, Color::*};
 use termimad::{minimad::*, *};
 
 use crate::cli::action::Action;
-use crate::cli::cli::W;
 use crate::cli::keybindings::KeyBindings;
+use crate::cli::W;
 
 static TEMPLATE: &str = r#"
 
-# murabi ${version}
+# gem ${version}
 
-**murabi** is a background compiler, watching your sources and executing your cargo jobs on change.
+**gem** is a Code chunk executor, it runs your markdown files executing your Code chunks and outputing result.
 
-See *https://github.com/Canop/murabi* for a complete guide.
+See *https://github.com/gem-io/gem* for a complete guide.
 
 |:-:|:-:
 |**action**|**shortcuts**
@@ -21,9 +21,6 @@ ${keybindings
 |${action}|${keys}
 }
 |-:
-
-Those bindings can be configured in your global `prefs.toml` file or in the project's `murabi.toml` file.
-
 
 "#;
 

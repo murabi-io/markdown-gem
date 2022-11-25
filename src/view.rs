@@ -4,10 +4,10 @@ use crossterm::style::Color::{AnsiValue, Magenta, Yellow};
 use anyhow;
 use termimad::*;
 
-use crate::cli::cli::W;
 use crate::cli::help_line::HelpLine;
 use crate::cli::help_page::HelpPage;
 use crate::cli::keybindings::KeyBindings;
+use crate::cli::W;
 use crate::executor::execution_plan::ExecutionItem;
 use crate::minimad::{clean, Composite, Text};
 
@@ -159,7 +159,7 @@ impl View {
             } else {
                 0
             };
-            let fmt_text = FmtText::from_text(&self.render_skin, text, Some(width as usize));
+            let fmt_text = Self::fill_line_width(&self.render_skin, text, width as usize);
 
             let mut text_view = TextView::from(&self.render_area, &fmt_text);
             if lines_count.is_some() {
@@ -176,6 +176,23 @@ impl View {
             }
         }
         Ok(())
+    }
+
+    fn fill_line_width<'k, 's>(skin: &'k MadSkin, text: Text<'s>, width: usize) -> FmtText<'k, 's> {
+        let fmt_text = FmtText::from_text(skin, text, Some(width));
+        let lines: Vec<FmtLine> = fmt_text
+            .lines
+            .into_iter()
+            .map(|l| {
+                if let FmtLine::Normal(mut comp) = l {
+                    comp.fill_width(fmt_text.width.unwrap(), Alignment::Left, skin);
+                    FmtLine::Normal(comp)
+                } else {
+                    l
+                }
+            })
+            .collect();
+        FmtText { lines, ..fmt_text }
     }
 
     fn build_md<'a>(

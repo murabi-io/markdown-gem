@@ -38,7 +38,11 @@ impl Executor {
     /// launch the commands, send the lines of its stderr on the
     /// line channel.
     /// If `with_stdout` capture and send also its stdout.
-    pub fn new(location: JobLocation, mut execution_plan: ExecutionPlan) -> Result<Self> {
+    pub fn new(
+        location: JobLocation,
+        mut execution_plan: ExecutionPlan,
+        keep_files: bool,
+    ) -> Result<Self> {
         let (stop_sender, mut stop_receiver) = oneshot::channel();
         let (line_sender, line_receiver) = crossbeam::channel::unbounded();
 
@@ -82,7 +86,7 @@ impl Executor {
                         );
                         command
                     });
-                    let job = if maybe_job.is_some() {
+                    let mut job = if maybe_job.is_some() {
                         maybe_job.unwrap()
                     } else {
                         continue;
@@ -143,6 +147,11 @@ impl Executor {
                     };
 
                     if line_sender.send(response).is_err() {
+                        break;
+                    }
+
+                    if !keep_files && job.remove_file().is_err() {
+                        error!("Couldn't remove the job file");
                         break;
                     }
                 }

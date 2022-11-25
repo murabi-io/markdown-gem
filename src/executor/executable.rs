@@ -14,7 +14,9 @@ impl ExecutablePosition {
     pub fn start(start: usize) -> Self {
         Self { start, end: 0 }
     }
+
     /// Create new position
+    #[allow(dead_code)]
     pub fn new(start: usize, end: usize) -> Self {
         Self { start, end }
     }

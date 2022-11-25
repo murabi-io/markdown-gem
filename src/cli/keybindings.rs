@@ -1,8 +1,6 @@
-use {
-    crokey::*,
-    serde::Deserialize,
-    std::collections::{hash_map, HashMap},
-};
+use crokey::*;
+use serde::Deserialize;
+use std::collections::{hash_map, HashMap};
 
 use crate::cli::action::Action;
 use crate::cli::internal::Internal;

@@ -50,7 +50,7 @@ fn main() -> anyhow::Result<()> {
     };
 
     log4rs::init_config(config)?;
-    cli::cli::run(&args)?;
+    cli::run(&args)?;
     info!("bye");
     Ok(())
 }

@@ -3,15 +3,14 @@ use std::io::{stdout, BufWriter};
 use anyhow::bail;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 
-use {
-    crate::*,
-    crossterm::{
-        self, cursor,
-        terminal::{EnterAlternateScreen, LeaveAlternateScreen},
-        QueueableCommand,
-    },
-    std::{fs, io::Write},
+use crate::app;
+use crossterm::{
+    self, cursor,
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen},
+    QueueableCommand,
 };
+use std::{fs, io::Write};
+use termimad::{minimad, EventSource, EventSourceOptions};
 
 use crate::cli::action::Action;
 use crate::cli::args::Args;
@@ -62,13 +61,19 @@ pub fn run(args: &Args) -> anyhow::Result<Option<Action>> {
     })?;
     view.draw_help_line(&mut w)?;
 
-    let result = app::run(&mut w, &mut view, location, execution_plan, &event_source);
+    let result = app::run(
+        &mut w,
+        &mut view,
+        location,
+        execution_plan,
+        &event_source,
+        args.keep_builds,
+    );
 
     w.flush()?;
     w.queue(cursor::Show)?;
     w.queue(DisableMouseCapture)?;
 
     w.queue(LeaveAlternateScreen)?;
-    w.flush()?;
     result
 }

@@ -11,7 +11,7 @@ use crate::executor::job_location::JobLocation;
 
 static MURABI_BUILD_DIR: &str = ".mrbuild";
 
-/// One of the possible jobs that murabi can run
+/// One of the possible jobs that gem can run
 #[derive(Debug, Clone)]
 pub struct Job {
     /// The tokens making the command to execute (first one
@@ -37,9 +37,20 @@ pub struct Job {
     /// we get errors.
     pub allow_errors: bool,
 
+    /// executable meta data, including code-chinks and
+    /// the attributes
     pub executable: Executable,
 
+    /// the location of the job
     pub location: JobLocation,
+
+    /// the build file location after it's created
+    file_path: Option<PathBuf>,
+
+    // TODO: remove after sudo implementation
+    #[allow(dead_code)]
+    /// should the job run in sudo
+    sudo: bool,
 }
 
 impl Job {
@@ -57,13 +68,23 @@ impl Job {
                 allow_errors: attributes.allow_errors,
                 executable: item.clone(),
                 location: location.clone(),
+                file_path: None,
+                sudo: attributes.with_sudo,
             }
         })
     }
 
     pub fn get_command(&self) -> Command {
         let mut tokens = self.command.iter();
-        let mut command = Command::new(tokens.next().unwrap());
+        // TODO: implement proper sudo handling
+        let mut command = if self.sudo {
+            let mut sudo = Command::new("sudo");
+            sudo.arg(tokens.next().unwrap());
+            sudo
+        } else {
+            Command::new(tokens.next().unwrap())
+        };
+        // let mut command = Command::new(tokens.next().unwrap());
         command.current_dir(self.location.workspace_root.clone());
         let (args, path) = self
             .executable
@@ -83,7 +104,8 @@ impl Job {
         command
     }
 
-    pub fn write_file(&self) -> io::Result<PathBuf> {
+    /// create and write the job file
+    pub fn write_file(&mut self) -> io::Result<PathBuf> {
         let name = self
             .executable
             .code_chunk
@@ -104,7 +126,19 @@ impl Job {
 
         build_dir.push(name);
         fs::write(&build_dir, &self.executable.code)?;
+
+        self.file_path = Some(PathBuf::from(&build_dir));
         Ok(build_dir)
+    }
+
+    /// remove the job file
+    pub fn remove_file(&self) -> io::Result<()> {
+        if self.file_path.is_some() {
+            let path = self.file_path.as_ref().unwrap();
+            fs::remove_file(path)
+        } else {
+            Ok(())
+        }
     }
 }
 
