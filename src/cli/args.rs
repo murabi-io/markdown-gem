@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use clap::Parser;
 
-/// gem runs your MD files as Code chunks.
+/// markdown-gem runs your MD files as code chunks.
 ///
 /// Documentation at <https://github.com/murabi-io/murabi>
 #[derive(Debug, Parser, Default)]

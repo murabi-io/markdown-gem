@@ -13,7 +13,7 @@ impl HelpLine {
         let quit = keybindings
             .shortest_internal_key(Internal::Quit)
             .map(|k| format!("Hit *{k}* to quit"))
-            .expect("the app to be quittable");
+            .expect("the app to be equitable");
         let help = keybindings
             .shortest_internal_key(Internal::Help)
             .map(|k| format!("*{k}* for help"));
@@ -34,27 +34,6 @@ impl HelpLine {
                 parts.push(s);
             }
         } else {
-            // if let CommandResult::Report(report) = &state.cmd_result {
-            //     if report.suggest_backtrace {
-            //         if let Some(s) = &self.toggle_backtrace {
-            //             parts.push(s);
-            //         }
-            //     }
-            //     // else if !report.is_success(state.mission.allow_warnings()) {
-            //     //     if let Some(s) = &self.toggle_summary {
-            //     //         parts.push(s);
-            //     //     }
-            //     // }
-            // }
-            // if state.wrap {
-            //     if let Some(s) = &self.not_wrap {
-            //         parts.push(s);
-            //     }
-            // } else {
-            //     if let Some(s) = &self.wrap {
-            //         parts.push(s);
-            //     }
-            // }
             if let Some(s) = &self.help {
                 parts.push(s);
             }

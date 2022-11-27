@@ -10,7 +10,7 @@ static TEMPLATE: &str = r#"
 
 # gem ${version}
 
-**gem** is a Code chunk executor, it runs your markdown files executing your Code chunks and outputing result.
+**gem** is a code chunk executor, it runs your markdown files executing your code chunks and outputing results.
 
 See *https://github.com/gem-io/gem* for a complete guide.
 
@@ -67,7 +67,7 @@ impl HelpPage {
         }
     }
 
-    /// draw the state on the whole terminal
+    /// draw the state on area
     pub fn draw(&mut self, w: &mut W, area: &Area) -> Result<()> {
         let text = self.expander.expand(&self.template);
         let fmt_text = FmtText::from_text(&self.skin, text, Some((area.width - 1) as usize));
@@ -75,30 +75,4 @@ impl HelpPage {
         self.scroll = text_view.set_scroll(self.scroll);
         Ok(text_view.write_on(w)?)
     }
-
-    // pub fn apply_scroll_command(&mut self, cmd: ScrollCommand) {
-    //     let text = self.expander.expand(&self.template);
-    //     let fmt_text = FmtText::from_text(
-    //         &self.skin,
-    //         text,
-    //         Some((self.area.width - 1) as usize),
-    //     );
-    //     let mut text_view = TextView::from(&self.area, &fmt_text);
-    //     text_view.set_scroll(self.scroll);
-    //     match cmd {
-    //         ScrollCommand::Top => {
-    //             text_view.scroll = 0;
-    //         }
-    //         ScrollCommand::Bottom => {
-    //             text_view.set_scroll(text_view.content_height());
-    //         }
-    //         ScrollCommand::Lines(lines) => {
-    //             text_view.try_scroll_lines(lines);
-    //         }
-    //         ScrollCommand::Pages(pages) => {
-    //             text_view.try_scroll_pages(pages);
-    //         }
-    //     }
-    //     self.scroll = text_view.scroll;
-    // }
 }

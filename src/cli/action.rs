@@ -10,6 +10,7 @@ lazy_static! {
 }
 
 /// an action that can be mapped to a key
+/// or requested to be executed
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Action {
     Internal(Internal),

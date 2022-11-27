@@ -35,9 +35,8 @@ pub struct Task {
 type LineSender = crossbeam::channel::Sender<CommandExecInfo>;
 
 impl Executor {
-    /// launch the commands, send the lines of its stderr on the
+    /// launch the commands, send the lines of its stderr/out on the
     /// line channel.
-    /// If `with_stdout` capture and send also its stdout.
     pub fn new(
         location: JobLocation,
         mut execution_plan: ExecutionPlan,

@@ -31,7 +31,7 @@ impl ExecutablePosition {
 pub struct Executable {
     /// Position of the executable
     pub position: ExecutablePosition,
-    /// Extracted code chunks
+    /// Extracted code chunk meta data
     pub code_chunk: Option<CodeChunk>,
     /// The actual code to be executed
     pub code: String,

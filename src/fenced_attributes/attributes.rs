@@ -25,20 +25,20 @@ pub struct Attributes {
     /// derived from https://doc.rust-lang.org/std/env/consts/constant.ARCH.html
     pub arch: Option<Vec<String>>,
 
-    /// Code chunk executor name or path, e.g. `sh`, `node` and etc.
+    /// code chunk command name or path, e.g. `sh`, `node` and etc.
     pub cmd: Option<String>,
 
-    /// Code chunk executor arguments
+    /// code chunk command arguments
     pub args: Option<Vec<String>>,
 
     /// `PATH` env variable for the commands
     pub path: Option<String>,
 
-    /// determines if gem should executed  the Code chunk as file, default `true`
+    /// determines if gem should execute the code chunk as a file, default `true`
     #[serde(default = "serde_default_true")]
     pub as_file: bool,
 
-    /// determines if gem should display stdout of the Code chunk, default `true`
+    /// determines if gem should display stdout of the code chunk, default `true`
     #[serde(default = "serde_default_true")]
     pub stdout: bool,
 
@@ -56,10 +56,7 @@ pub struct Attributes {
 }
 
 impl Attributes {
-    /**
-     * Parses block attributes
-     * @param text e.g. {#identifier .class1 .class2 key1=value1 key2=value2}
-     */
+    /// Parses block attributes  text e.g. {#identifier .class1 .class2 key1=value1 key2=value2}
     pub fn parse(text: &str) -> Result<Self> {
         let hocon = HoconLoader::new().load_str(text)?.hocon()?;
         let attributes: Attributes = hocon.resolve()?;
@@ -78,8 +75,6 @@ impl Attributes {
         self.cmd.is_none() && self.arch.is_none() && self.args.is_none() && self.sys.is_none()
     }
 }
-
-/// Tests of fences parsing
 
 #[test]
 fn parse_attributes_test() {
