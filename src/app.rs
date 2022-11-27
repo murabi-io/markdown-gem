@@ -16,8 +16,7 @@ use crate::executor::job_location::JobLocation;
 use crate::executor::Executor;
 use crate::view::View;
 
-/// Run the mission and return the reference to the next
-/// job to run, if any
+/// Run the execution plan
 pub fn run(
     w: &mut W,
     view: &mut View,

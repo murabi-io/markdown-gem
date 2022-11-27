@@ -5,9 +5,11 @@ use crate::executor::executable::{Executable, ExecutablePosition};
 use crate::fenced_attributes::code_chunk::CodeChunk;
 use crate::fenced_attributes::Attributes;
 use crate::minimad::{Line, LineParser};
+
+#[cfg(linux)]
 use sys_info;
 
-#[cfg(unix)]
+#[cfg(linux)]
 lazy_static! {
     pub static ref LINUX_ID_LIKE: Option<String> = sys_info::linux_os_release()
         .map(|v| -> Option<String> { v.id_like })
@@ -15,7 +17,7 @@ lazy_static! {
         .flatten();
 }
 
-#[cfg(not(unix))]
+#[cfg(not(linux))]
 lazy_static! {
     pub static ref LINUX_ID_LIKE: Option<String> = None;
 }

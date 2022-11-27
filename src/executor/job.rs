@@ -76,7 +76,7 @@ impl Job {
 
     pub fn get_command(&self) -> Command {
         let mut tokens = self.command.iter();
-        // TODO: implement proper sudo handling
+        // TODO: implement proper sudo handling with pass request
         let mut command = if self.sudo {
             let mut sudo = Command::new("sudo");
             sudo.arg(tokens.next().unwrap());

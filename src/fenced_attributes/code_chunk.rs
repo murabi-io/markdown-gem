@@ -10,9 +10,13 @@ lazy_static! {
     pub static ref ONLY_LANG: Regex = Regex::new(r"^ *(`{3,}|~{3,})([^\s]+)").unwrap();
 }
 
+/// Code chunk information
 #[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct CodeChunk {
+    /// code chunk language
     pub lang: Option<String>,
+
+    /// code chunk attributes
     pub attributes: Attributes,
 }
 
@@ -44,8 +48,6 @@ impl CodeChunk {
         }
     }
 }
-
-/// Tests of fences parsing
 
 #[test]
 fn indented_code_fences() {

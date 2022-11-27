@@ -1,100 +1,82 @@
-# Markdown Rendering on Terminal
+<p align="center">
+    <img width="150" src="https://raw.githubusercontent.com/murabi-io/markdown-gem/main/docs/compact.png?token=GHSAT0AAAAAABXJWXAPLQRKX2XP4ELKQDC4Y4AZL6Q">
+</p>
 
-Here's the code to print this markdown block in the terminal:
+# markdown-gem, a.k.a _gem_ - markdown code chunks executor
 
+Inspired by [R Markdown code chunks](https://bookdown.org/yihui/rmarkdown/r-code.html), but for any code.
+
+Our goal is to make markdown documentation, examples, instructions, or anything related to the code in your MD files - provable, easily maintainable, and integrate it into your CI pipelines.
+
+![run example](docs/run.gif)
+
+## Install
+
+### From crates.io
+You'll need to have the [Rust development environment](https://rustup.rs/) installed and up to date.
+
+Once it's installed, use cargo to install lfs:
+```shell {cmd=sh}
+cargo install markdown-chunks
 ```
-let mut skin = MadSkin::default();
-skin.set_headers_fg(rgb(255, 187, 0));
-skin.bold.set_fg(Yellow);
-skin.italic.set_fgbg(Magenta, rgb(30, 30, 40));
-skin.bullet = StyledChar::from_fg_char(Yellow, '⟡');
-skin.quote_mark = StyledChar::from_fg_char(Yellow, '▐');
-skin.bullet = StyledChar::from_fg_char(Yellow, '⟡');
-skin.quote_mark.set_fg(Yellow);
-println!("{}", skin.term_text(my_markdown));
-```
+### From source
+You'll need to have the [Rust development environment](https://rustup.rs/) installed.
 
-Here is a bash command to list the current dir on linux or macos
-```shell {cmd=sh, sys=[linux, macos]}
-ls -l
-sleep 1s
-ls -la
-```
-or on windows:
-
-```shell {sys=[windows]}
-Get-ChildItem -Recursive | Sort LastWriteTime 
-```
-
-**Termimad** is built over **Crossterm** and **Minimad**.
-
-----
-
-## Why use Termimad
-
-* *display* static or dynamic *rich* texts
-* *separate* your text building code or resources from its styling
-* *configure* your colors
-
-## Real use cases
-
-
-```js {cmd=node}
-var items = [5,3,7,6,2,9];
-function swap(items, leftIndex, rightIndex){
-  var temp = items[leftIndex];
-  items[leftIndex] = items[rightIndex];
-  items[rightIndex] = temp;
-}
-function partition(items, left, right) {
-  var pivot   = items[Math.floor((right + left) / 2)], //middle element
-      i       = left, //left pointer
-      j       = right; //right pointer
-  while (i <= j) {
-    while (items[i] < pivot) {
-      i++;
-    }
-    while (items[j] > pivot) {
-      j--;
-    }
-    if (i <= j) {
-      swap(items, i, j); //sawpping two elements
-      i++;
-      j--;
-    }
-  }
-  return i;
-}
-
-function quickSort(items, left, right) {
-  var index;
-  if (items.length > 1) {
-    index = partition(items, left, right); //index returned from partition
-    if (left < index - 1) { //more elements on the left side of the pivot
-      quickSort(items, left, index - 1);
-    }
-    if (index < right) { //more elements on the right side of the pivot
-      quickSort(items, index, right);
-    }
-  }
-  return items;
-}
-// first call to quick sort
-var sortedArray = quickSort(items, 0, items.length - 1);
-console.log(sortedArray); //prints [2,3,5,6,7,9]
+Fetch the [murabi-io/markdown-gem](https://github.com/murabi-io/markdown-gem) repository, move to the `markdown-gem` directory, then run
+```shell {cmd=sh}
+git clone git@github.com:murabi-io/markdown-gem.git
+cd markdown-gem
+cargo install --path .
 ```
 
-and a table for testing:
-| Tables   |      Are      |  Cool |
-|----------|:-------------:|------:|
-| col 1 is |  left-aligned | $1600 |
-| col 2 is |    centered   |   $12 |
-| col 3 is | right-aligned |    $1 |
+## Why use markdown-gem
 
-* the help screen of a terminal application
-* small snippets of rich text in a bigger application
-* terminal app output
+* ***automate*** and **_document_** at the same time
+* ***maintain*** your documentation and make sure the examples are working
+* ***improve*** your user experience
 
-## What people say about Termimad
+## Code chunks
+A code chunk is a code that is part of your markdown and you want it executed, e.g.
+~~~
+```sh {sys=[linux], linux_distro=[debian]}
+apt install ...
+```
+~~~
+The code chunk above defines a shell script to install something using `apt`, and it'll run only on **Linux** systems of the **Debian** family.
+The metadata of the code chunk is ignored by most renderers and users will only see the shell code containing the `apt...` part.
 
-> I find it convenient *[Termimad's author]*
+### Attributes and filters
+The attributes of the code chunk give the executor information on how to run the code, and filters define when not to run it.
+
+#### Available attributes
+| Attribute      | Type               | Optional/Default | Description                                                               |
+|----------------|--------------------|------------------|---------------------------------------------------------------------------|
+| cmd            | string             | no*              | command name or path, e.g. `sh`, `node` and etc.                          |
+| args           | array of arguments | yes              | command arguments                                                         |
+| path           | string             | yes              | `PATH` env variable for the command                                       |
+| as_file        | boolean            | yes/true         | determines if gem should execute the code chunk as a file, default `true` |
+| stdout         | boolean            | yes/true         | determines if gem should display stdout of the code chunk, default `true` |
+| allow_warnings | boolean            | yes/true         | determines if gem should allow warnings, default `true`                   |
+| allow_errors** | boolean            | yes/false        | determines if gem should TODO: allow errors, default `true`               |
+| with_sudo***   | boolean            | yes/false        | tells gem to run the code chunk in sudo                                   |
+> - \* the implementation of the default commands by code chunk lang attribute will make this attribute optional
+> - ** the functionality for `allow_errors` is not there yet
+> - *** sudo support is not available yet, you can still execute `gem` under sudo, but keep in mind that all code chunks will inherit the sudo privileges
+
+#### Available filters
+| Filter       | Type             | Optional/Default   | Inclusive/Exclusive | Description                                                                                                                                                     |
+|--------------|------------------|--------------------|---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| sys          | array of strings | yes/[]             | inclusive           | os system filter, possible values: `linux`, `macos`, `ios`, `freebsd`, `dragonfly`, `netbsd`, `openbsd`, `solaris`, `android`, `windows`                        |
+| arch         | array of strings | yes/[]             | inclusive           | system architecture filter, possible values: `x86`, `x86_64`, `arm`, `aarch64`, `m68k`, `mips`, `mips64`, `powerpc`, `powerpc64`, `riscv64`, `s390x`, `sparc64` |
+| linux_distro | array of strings | yes/[]             | inclusive           | linux distro filter, e.g. `arch`, `debian` and etc, derived from linux release ID_LIKE                                                                          |
+
+## Security
+The code chunks are executed on the host machine without any pre-checks in a form provided in the markdown documents. The execution is done through `tokio::process::Command` and the detailed documentation can be found here: [tokio::process::Command](https://docs.rs/tokio/latest/tokio/process/struct.Command.html).
+> You should perceive running code chunks as running any other shell script, with all the inherent dangers.
+
+### TODO
+
+- [ ] sudo support
+- [ ] https://github.com/murabi-io/markdown-gem/issues/7
+- [ ] https://github.com/murabi-io/markdown-gem/issues/6
+- [ ] https://github.com/murabi-io/markdown-gem/issues/5

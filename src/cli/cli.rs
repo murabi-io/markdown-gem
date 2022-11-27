@@ -30,7 +30,7 @@ pub type W = BufWriter<std::io::Stdout>;
 
 /// return the writer used by the application
 pub fn writer() -> W {
-    //std::io::stderr()
+    //std::io::stdout()
     BufWriter::new(stdout())
 }
 

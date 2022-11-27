@@ -39,6 +39,6 @@ pub enum CommandExecInfo {
     /// Here's a line of output (coming from stderr or stdout)
     Line(CommandOutputLine),
 
-    /// Output an MD line coming from execution plan
+    /// Output an MD line coming from execution plan directly
     Output(ExecutionItem),
 }

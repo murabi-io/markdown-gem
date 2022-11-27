@@ -1,7 +1,16 @@
 [package]
 name = "markdown-gem"
-version = "0.1.0"
+version = "0.1.0-rc"
 edition = "2021"
+authors = ["Timur Khamrakulov <timur@murabi.io>"]
+license = "GPLv3"
+description = "Markdown code chunk runner and renderer"
+readme = "README.md"
+homepage = "https://github.com/murabi-io/murabi"
+repository = "https://github.com/murabi-io/murabi"
+keywords = ["cli", "markdown", "code-chunk", "executor", "runner"]
+categories = ["command-line-utilities"]
+build = "build.rs"
 
 [dependencies]
 serde = { version = "1.0.145", features = ["derive"] }
@@ -14,11 +23,10 @@ anyhow = "1.0.65"
 exitcode = "1.1.2"
 crokey="0.4"
 log = "0.4.0"
-env_logger = "0.9.0"
+env_logger = "0.10.0"
 log4rs="1.2.0"
 crossbeam="0.8.2"
 toml="0.5.9"
-sys-info = "0.9.1"
 
 [dependencies.hocon]
 version = "0.9.0"
@@ -31,9 +39,18 @@ default-features = false
 features = ["net", "sync", "process", "rt", "macros", "io-util"]
 
 [dependencies.clap]
-version = "4.0.14"
+version = "4.0.26"
 features = ["derive"]
+
+[target.'cfg(linux)'.dependencies]
+sys-info = "0.9.1"
 
 [[bin]]
 name = "gem"
 path = "src/main.rs"
+
+[build-dependencies]
+anyhow = "1.0.65"
+clap = { version = "4.0.26", features = ["derive"] }
+clap_complete = "4.0.5"
+clap_mangen = "0.2.4"
