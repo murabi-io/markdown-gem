@@ -19,7 +19,7 @@ pub struct Args {
     #[clap(short = 'p', long = "path")]
     pub path: Option<String>,
 
-    /// if specified, gem won't delete the build file of the Code chunks
+    /// if specified, markdown-gem won't delete the build file of the Code chunks
     #[clap(short = 'k', long = "keep")]
     pub keep_builds: bool,
 
@@ -29,7 +29,7 @@ pub struct Args {
 }
 
 impl Args {
-    /// positional arguments in gem command are a convenience
+    /// positional arguments in markdown-gem command are a convenience
     /// allowing to skip writing `-p`.
     /// To be used, it must be copied to `path` value.
     pub fn fix(&mut self) -> Result<()> {

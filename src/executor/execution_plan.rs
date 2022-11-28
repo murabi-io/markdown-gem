@@ -52,7 +52,7 @@ impl<'a> ExecutionPlan {
     ///
     /// ```
     /// use minimad::clean;
-    /// use gem::executor::execution_plan::ExecutionPlan;
+    /// use markdown_gem::executor::execution_plan::ExecutionPlan;
     ///
     /// let md = clean::lines(r#"
     ///     * some bullet item

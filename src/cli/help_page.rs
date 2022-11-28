@@ -8,7 +8,7 @@ use crate::cli::W;
 
 static TEMPLATE: &str = r#"
 
-# gem ${version}
+# markdown-gem ${version}
 
 **gem** is a code chunk executor, it runs your markdown files executing your code chunks and outputing results.
 

@@ -34,23 +34,23 @@ pub struct Attributes {
     /// `PATH` env variable for the commands
     pub path: Option<String>,
 
-    /// determines if gem should execute the code chunk as a file, default `true`
+    /// determines if markdown-gem should execute the code chunk as a file, default `true`
     #[serde(default = "serde_default_true")]
     pub as_file: bool,
 
-    /// determines if gem should display stdout of the code chunk, default `true`
+    /// determines if markdown-gem should display stdout of the code chunk, default `true`
     #[serde(default = "serde_default_true")]
     pub stdout: bool,
 
-    /// determines if gem should allow warnings, default `true`
+    /// determines if markdown-gem should allow warnings, default `true`
     #[serde(default = "serde_default_true")]
     pub allow_warnings: bool,
 
-    /// determines if gem should TODO: allow errors, default `true`
+    /// determines if markdown-gem should TODO: allow errors, default `true`
     #[serde(default)]
     pub allow_errors: bool,
 
-    /// tells gem to run the Code chunk in sudo
+    /// tells markdown-gem to run the Code chunk in sudo
     #[serde(default)]
     pub with_sudo: bool,
 }
