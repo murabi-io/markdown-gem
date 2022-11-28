@@ -54,11 +54,11 @@ The attributes of the code chunk give the executor information on how to run the
 | cmd            | string             | no*              | command name or path, e.g. `sh`, `node` and etc.                          |
 | args           | array of arguments | yes              | command arguments                                                         |
 | path           | string             | yes              | `PATH` env variable for the command                                       |
-| as_file        | boolean            | yes/true         | determines if gem should execute the code chunk as a file, default `true` |
-| stdout         | boolean            | yes/true         | determines if gem should display stdout of the code chunk, default `true` |
-| allow_warnings | boolean            | yes/true         | determines if gem should allow warnings, default `true`                   |
-| allow_errors** | boolean            | yes/false        | determines if gem should TODO: allow errors, default `true`               |
-| with_sudo***   | boolean            | yes/false        | tells gem to run the code chunk in sudo                                   |
+| as_file        | boolean            | yes/true         | determines if markdown-gem should execute the code chunk as a file, default `true` |
+| stdout         | boolean            | yes/true         | determines if markdown-gem should display stdout of the code chunk, default `true` |
+| allow_warnings | boolean            | yes/true         | determines if markdown-gem should allow warnings, default `true`                   |
+| allow_errors** | boolean            | yes/false        | determines if markdown-gem should TODO: allow errors, default `true`               |
+| with_sudo***   | boolean            | yes/false        | tells markdown-gem to run the code chunk in sudo                                   |
 > - \* the implementation of the default commands by code chunk lang attribute will make this attribute optional
 > - ** the functionality for `allow_errors` is not there yet
 > - *** sudo support is not available yet, you can still execute `gem` under sudo, but keep in mind that all code chunks will inherit the sudo privileges

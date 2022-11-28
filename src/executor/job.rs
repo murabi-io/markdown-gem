@@ -11,7 +11,7 @@ use crate::executor::job_location::JobLocation;
 
 static MURABI_BUILD_DIR: &str = ".mrbuild";
 
-/// One of the possible jobs that gem can run
+/// One of the possible jobs that markdown-gem can run
 #[derive(Debug, Clone)]
 pub struct Job {
     /// The tokens making the command to execute (first one

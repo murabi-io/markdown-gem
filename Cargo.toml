@@ -45,10 +45,6 @@ features = ["derive"]
 [target.'cfg(linux)'.dependencies]
 sys-info = "0.9.1"
 
-[[bin]]
-name = "gem"
-path = "src/main.rs"
-
 [build-dependencies]
 anyhow = "1.0.65"
 clap = { version = "4.0.26", features = ["derive"] }

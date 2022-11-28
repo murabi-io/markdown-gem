@@ -7,7 +7,7 @@
 H1="\n\e[30;104;1m\e[2K\n\e[A" # style first header
 H2="\n\e[30;104m\e[1K\n\e[A" # style second header
 EH="\e[00m\n\e[2K" # end header
-NAME=gem
+NAME=markdown-gem
 
 version=$(./version.sh)
 echo -e "${H1}Compilation of all targets for $NAME $version${EH}"
