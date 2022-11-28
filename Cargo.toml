@@ -1,6 +1,6 @@
 [package]
 name = "markdown-gem"
-version = "0.1.0-rc"
+version = "0.1.0-rc.2"
 edition = "2021"
 authors = ["Timur Khamrakulov <timur@murabi.io>"]
 license = "GPL-3.0"
