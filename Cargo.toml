@@ -1,13 +1,13 @@
 [package]
 name = "markdown-gem"
-version = "0.1.0-rc"
+version = "0.1.0-rc.v3"
 edition = "2021"
 authors = ["Timur Khamrakulov <timur@murabi.io>"]
 license = "GPLv3"
 description = "Markdown code chunk runner and renderer"
 readme = "README.md"
-homepage = "https://github.com/murabi-io/murabi"
-repository = "https://github.com/murabi-io/murabi"
+homepage = "https://github.com/murabi-io/markdown-gem"
+repository = "https://github.com/murabi-io/markdown-gem"
 keywords = ["cli", "markdown", "code-chunk", "executor", "runner"]
 categories = ["command-line-utilities"]
 build = "build.rs"
