@@ -17,7 +17,7 @@ You'll need to have the [Rust development environment](https://rustup.rs/) insta
 
 Once it's installed, use cargo to install lfs:
 ```shell {cmd=sh}
-cargo install markdown-chunks
+cargo install markdown-gem
 ```
 ### From source
 You'll need to have the [Rust development environment](https://rustup.rs/) installed.
@@ -74,9 +74,5 @@ The attributes of the code chunk give the executor information on how to run the
 The code chunks are executed on the host machine without any pre-checks in a form provided in the markdown documents. The execution is done through `tokio::process::Command` and the detailed documentation can be found here: [tokio::process::Command](https://docs.rs/tokio/latest/tokio/process/struct.Command.html).
 > You should perceive running code chunks as running any other shell script, with all the inherent dangers.
 
-### TODO
-
-- [ ] sudo support
-- [ ] https://github.com/murabi-io/markdown-gem/issues/7
-- [ ] https://github.com/murabi-io/markdown-gem/issues/6
-- [ ] https://github.com/murabi-io/markdown-gem/issues/5
+## License and Acknowledgements
+The implementation is based on [termimad](https://github.com/Canop/termimad) and few other projects. I would like to thank [Denys Séguret](https://github.com/Canop) and [crossterm-rs](https://github.com/crossterm-rs) for their work and the existing open source code I used as inspiration.  
