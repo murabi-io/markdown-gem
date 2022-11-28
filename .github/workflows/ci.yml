@@ -3,7 +3,7 @@ on: push
 name: Continuous integration
 
 jobs:
-  library:
+  build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
