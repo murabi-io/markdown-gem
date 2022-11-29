@@ -1,37 +1,59 @@
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      - "v*.*.*"
 
 name: Release artifacts
 
 jobs:
   release:
-    name: release ${{ matrix.target }}
+    name: Compile and release
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: x86_64-pc-windows-gnu
-            archive: zip
-          - target: x86_64-unknown-linux-musl
-            archive: tar.gz tar.xz tar.zst
-          - target: x86_64-apple-darwin
-            archive: zip
     steps:
       - uses: actions/checkout@master
-      - name: Compile and release
+      - name: Compile target x86_64-unknown-linux-musl
+        id: linux_musl
         uses: rust-build/rust-build.action@v1.4.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          RUSTTARGET: ${{ matrix.target }}
-          ARCHIVE_TYPES: ${{ matrix.archive }}
+          RUSTTARGET: "x86_64-unknown-linux-musl"
+          ARCHIVE_TYPES: "tar.gz tar.xz tar.zst"
           UPLOAD_MODE: none
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+          EXTRA_FILES: "README.md LICENSE"
+      - name: Compile target x86_64-apple-darwin
+        id: apple
+        uses: rust-build/rust-build.action@v1.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-         name: Binary
-         path: |
-           ${{ steps.compile.outputs.BUILT_ARCHIVE }}
-           ${{ steps.compile.outputs.BUILT_CHECKSUM }}
+          RUSTTARGET: "x86_64-apple-darwin"
+          ARCHIVE_TYPES: zip
+          UPLOAD_MODE: none
+      - name: Compile target x86_64-pc-windows-gnu
+        id: windows
+        uses: rust-build/rust-build.action@v1.4.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          RUSTTARGET: "x86_64-pc-windows-gnu"
+          ARCHIVE_TYPES: zip
+          UPLOAD_MODE: none
+      - name: "✏️ Generate release changelog"
+        id: changelog
+        uses: heinrichreimer/github-changelog-generator-action@v2.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: ${{steps.changelog.outputs.changelog}}
+          files: |
+            ${{ steps.linux_musl.outputs.BUILT_ARCHIVE }}
+            ${{ steps.linux_musl.outputs.BUILT_CHECKSUM }}
+            ${{ steps.apple.outputs.BUILT_ARCHIVE }}
+            ${{ steps.apple.outputs.BUILT_CHECKSUM }}
+            ${{ steps.windows.outputs.BUILT_ARCHIVE }}
+            ${{ steps.windows.outputs.BUILT_CHECKSUM }}
+            README.md 
+            LICENSE
