@@ -1,8 +1,12 @@
 <p align="center">
-    <img width="150" src="https://raw.githubusercontent.com/murabi-io/markdown-gem/main/docs/compact.png?token=GHSAT0AAAAAABXJWXAPLQRKX2XP4ELKQDC4Y4AZL6Q">
+    <img width="150" src="https://raw.githubusercontent.com/murabi-io/markdown-gem/main/docs/compact.png">
 </p>
 
 # markdown-gem, a.k.a _gem_ - markdown code chunks executor
+[![build](https://github.com/murabi-io/markdown-gem/actions/workflows/ci.yml/badge.svg)](https://github.com/murabi-io/markdown-gem/actions/workflows/ci.yml)
+[![license](https://img.shields.io/github/license/murabi-io/markdown-gem)](https://github.com/murabi-io/markdown-gem/blob/main/LICENSE)
+[![crates](https://img.shields.io/crates/v/markdown-gem.svg)](https://crates.io/crates/markdown-gem)
+
 
 Inspired by [R Markdown code chunks](https://bookdown.org/yihui/rmarkdown/r-code.html), but for any code.
 
@@ -11,6 +15,13 @@ Our goal is to make markdown documentation, examples, instructions, or anything 
 ![run example](docs/run.gif)
 
 ## Install
+
+### From precompiled binaries
+Binaries are made available at every [GitHub release](https://github.com/murabi-io/markdown-gem/releases).
+
+The archives there contain all precompiled versions, as well as the licenses and other files.
+> When you download executable files, you'll have to ensure the shell can find them. An easy solution on Linux is for example to put them in /usr/local/bin. You may also have to set them executable using `chmod +x markdown-gem`.
+
 
 ### From crates.io
 You'll need to have the [Rust development environment](https://rustup.rs/) installed and up to date.
