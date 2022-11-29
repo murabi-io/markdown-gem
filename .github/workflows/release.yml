@@ -1,7 +1,6 @@
-#on:
-#  release:
-#    types: [created]
-on: push
+on:
+  release:
+    types: [created]
 
 name: Release artifacts
 
