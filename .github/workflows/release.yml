@@ -106,11 +106,11 @@ jobs:
         with:
           body: ${{steps.changelog.outputs.changelog}}
           files: |
-            ${{ need.jobs.compile_linux_musl.outputs.ARCHIVE }}
-            ${{ need.jobs.compile_linux_musl.outputs.CHECKSUM }}
-            ${{ need.jobs.compile_apple.outputs.ARCHIVE }}
-            ${{ need.jobs.compile_apple.outputs.CHECKSUM }}
-            ${{ need.jobs.compile_windows.outputs.ARCHIVE }}
-            ${{ need.jobs.compile_windows.outputs.CHECKSUM }}
+            ${{ needs.jobs.compile_linux_musl.outputs.ARCHIVE }}
+            ${{ needs.jobs.compile_linux_musl.outputs.CHECKSUM }}
+            ${{ needs.jobs.compile_apple.outputs.ARCHIVE }}
+            ${{ needs.jobs.compile_apple.outputs.CHECKSUM }}
+            ${{ needs.jobs.compile_windows.outputs.ARCHIVE }}
+            ${{ needs.jobs.compile_windows.outputs.CHECKSUM }}
             README.md 
             LICENSE
