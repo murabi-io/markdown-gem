@@ -6,11 +6,14 @@ on:
 name: Release artifacts
 
 jobs:
-  release:
-    name: Compile and release
+  compile_linux_musl:
+    name: Compile x86_64-unknown-linux-musl
     runs-on: ubuntu-latest
+    outputs:
+      ARCHIVE: ${{ steps.linux_musl.outputs.BUILT_ARCHIVE }}
+      CHECKSUM: ${{ steps.linux_musl.outputs.BUILT_CHECKSUM }}
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
       - name: Compile target x86_64-unknown-linux-musl
         id: linux_musl
         uses: rust-build/rust-build.action@v1.4.0
@@ -21,6 +24,23 @@ jobs:
           ARCHIVE_TYPES: "tar.gz tar.xz tar.zst"
           UPLOAD_MODE: none
           EXTRA_FILES: "README.md LICENSE"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux_musl
+          retention-days: 7
+          path: |
+            ${{ steps.linux_musl.outputs.BUILT_ARCHIVE }}
+            ${{ steps.linux_musl.outputs.BUILT_CHECKSUM }}
+
+  compile_apple:
+    name: Compile x86_64-apple-darwin
+    runs-on: ubuntu-latest
+    outputs:
+      ARCHIVE: ${{ steps.apple.outputs.BUILT_ARCHIVE }}
+      CHECKSUM: ${{ steps.apple.outputs.BUILT_CHECKSUM }}
+    steps:
+      - uses: actions/checkout@v3
       - name: Compile target x86_64-apple-darwin
         id: apple
         uses: rust-build/rust-build.action@v1.4.0
@@ -30,6 +50,22 @@ jobs:
           RUSTTARGET: "x86_64-apple-darwin"
           ARCHIVE_TYPES: zip
           UPLOAD_MODE: none
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: apple
+          retention-days: 7
+          path: |
+            ${{ steps.apple.outputs.BUILT_ARCHIVE }}
+            ${{ steps.apple.outputs.BUILT_CHECKSUM }}
+  compile_windows:
+    name: Compile x86_64-pc-windows-gnu
+    runs-on: ubuntu-latest
+    outputs:
+      ARCHIVE: ${{ steps.windows.outputs.BUILT_ARCHIVE }}
+      CHECKSUM: ${{ steps.windows.outputs.BUILT_CHECKSUM }}
+    steps:
+      - uses: actions/checkout@v3
       - name: Compile target x86_64-pc-windows-gnu
         id: windows
         uses: rust-build/rust-build.action@v1.4.0
@@ -39,21 +75,42 @@ jobs:
           RUSTTARGET: "x86_64-pc-windows-gnu"
           ARCHIVE_TYPES: zip
           UPLOAD_MODE: none
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows
+          retention-days: 7
+          path: |
+            ${{ steps.windows.outputs.BUILT_ARCHIVE }}
+            ${{ steps.windows.outputs.BUILT_CHECKSUM }}
+  release:
+    name: Compile x86_64-pc-windows-gnu
+    runs-on: ubuntu-latest
+    needs:
+      - compile_linux_musl
+      - compile_apple
+      - compile_windows
+    steps:
+      - uses: actions/checkout@v3
       - name: "✏️ Generate release changelog"
         id: changelog
         uses: heinrichreimer/github-changelog-generator-action@v2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/download-artifact@v3
+        name: Download artifacts
+      - name: Display structure of downloaded files
+        run: ls -R
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           body: ${{steps.changelog.outputs.changelog}}
           files: |
-            ${{ steps.linux_musl.outputs.BUILT_ARCHIVE }}
-            ${{ steps.linux_musl.outputs.BUILT_CHECKSUM }}
-            ${{ steps.apple.outputs.BUILT_ARCHIVE }}
-            ${{ steps.apple.outputs.BUILT_CHECKSUM }}
-            ${{ steps.windows.outputs.BUILT_ARCHIVE }}
-            ${{ steps.windows.outputs.BUILT_CHECKSUM }}
+            ${{ needs.jobs.compile_linux_musl.outputs.ARCHIVE }}
+            ${{ needs.jobs.compile_linux_musl.outputs.CHECKSUM }}
+            ${{ needs.jobs.compile_apple.outputs.ARCHIVE }}
+            ${{ needs.jobs.compile_apple.outputs.CHECKSUM }}
+            ${{ needs.jobs.compile_windows.outputs.ARCHIVE }}
+            ${{ needs.jobs.compile_windows.outputs.CHECKSUM }}
             README.md 
             LICENSE

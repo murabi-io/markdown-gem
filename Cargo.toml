@@ -50,3 +50,11 @@ anyhow = "1.0.65"
 clap = { version = "4.0.26", features = ["derive"] }
 clap_complete = "4.0.5"
 clap_mangen = "0.2.4"
+
+
+[profile.release]
+# Enable Link Time Optimization 
+lto = true
+codegen-units = 1
+opt-level = 'z'
+panic = "abort"
